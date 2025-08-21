@@ -84,7 +84,7 @@ class SentimentAnalyzer:
             
             return {
                 'overall_sentiment': normalized_sentiment,
-                'confidence': 1 - min(confidence, 1.0),  # Convert std to confidence
+                'confidence': 1 - min(float(confidence), 1.0),  # Convert std to confidence
                 'positive_count': positive_count,
                 'negative_count': negative_count,
                 'neutral_count': neutral_count,
@@ -116,8 +116,9 @@ class SentimentAnalyzer:
             
             # TextBlob sentiment analysis
             blob = TextBlob(cleaned_text)
-            textblob_polarity = blob.sentiment.polarity
-            textblob_subjectivity = blob.sentiment.subjectivity
+            sentiment = blob.sentiment
+            textblob_polarity = sentiment.polarity
+            textblob_subjectivity = sentiment.subjectivity
             
             # Combine scores (weighted average)
             compound_score = (vader_scores['compound'] * 0.7) + (textblob_polarity * 0.3)
@@ -281,7 +282,7 @@ class SentimentAnalyzer:
             
             return {
                 'overall_market_sentiment': overall_sentiment,
-                'market_confidence': max(0, market_confidence),
+                'market_confidence': max(0.0, float(market_confidence)),
                 'bullish_stocks': bullish_stocks,
                 'bearish_stocks': bearish_stocks,
                 'neutral_stocks': neutral_stocks,

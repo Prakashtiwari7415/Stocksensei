@@ -32,19 +32,23 @@ def get_stock_symbols() -> List[str]:
         'BA', 'CAT', 'GE', 'MMM', 'HON', 'UPS', 'FDX', 'RTX', 'LMT', 'NOC'
     ]
 
-def format_currency(amount: float, currency: str = 'USD') -> str:
+def format_currency(amount: float, currency: str = 'INR') -> str:
     """
     Format a number as currency.
     
     Args:
         amount: The amount to format
-        currency: Currency code (default: USD)
+        currency: Currency code (default: INR)
         
     Returns:
         Formatted currency string
     """
     try:
-        if currency == 'USD':
+        if currency == 'INR':
+            # Convert USD to INR (approximate rate: 1 USD = 83 INR)
+            inr_amount = amount * 83
+            return f"₹{inr_amount:,.2f}"
+        elif currency == 'USD':
             return f"${amount:,.2f}"
         else:
             return f"{amount:,.2f} {currency}"
@@ -231,14 +235,14 @@ def calculate_portfolio_metrics(stock_data: Dict[str, Any], sentiment_data: Dict
         sentiment_risk_ratio = portfolio_sentiment / sentiment_volatility if sentiment_volatility > 0 else 0
         
         return {
-            'portfolio_return': portfolio_return,
-            'portfolio_volatility': portfolio_volatility,
-            'portfolio_sentiment': portfolio_sentiment,
-            'sentiment_volatility': sentiment_volatility,
-            'avg_correlation': avg_correlation,
-            'total_volume': total_volume,
-            'sharpe_ratio': sharpe_ratio,
-            'sentiment_risk_ratio': sentiment_risk_ratio,
+            'portfolio_return': float(portfolio_return),
+            'portfolio_volatility': float(portfolio_volatility),
+            'portfolio_sentiment': float(portfolio_sentiment),
+            'sentiment_volatility': float(sentiment_volatility),
+            'avg_correlation': float(avg_correlation),
+            'total_volume': float(total_volume),
+            'sharpe_ratio': float(sharpe_ratio),
+            'sentiment_risk_ratio': float(sentiment_risk_ratio),
             'num_stocks': len(price_changes)
         }
         

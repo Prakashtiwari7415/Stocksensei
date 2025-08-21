@@ -19,6 +19,36 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS for better beginner experience
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(90deg, #4CAF50, #2196F3);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background: #f0f2f6;
+        padding: 1rem;
+        border-radius: 10px;
+        border-left: 4px solid #4CAF50;
+    }
+    .positive { color: #4CAF50; }
+    .negative { color: #f44336; }
+    .neutral { color: #ff9800; }
+    .info-box {
+        background: #e3f2fd;
+        padding: 1rem;
+        border-radius: 10px;
+        border-left: 4px solid #2196F3;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize components
 @st.cache_resource
 def init_components():
@@ -29,65 +59,85 @@ def init_components():
 stock_fetcher, sentiment_analyzer = init_components()
 
 # Sidebar configuration
-st.sidebar.title("📈 Market Dashboard")
-st.sidebar.markdown("---")
+st.sidebar.title("📈 Easy Stock Tracker")
+st.sidebar.markdown("### Choose Your Settings")
 
-# Stock selection
-st.sidebar.subheader("Stock Selection")
-default_symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "JPM"]
+# Add helpful info box
+st.sidebar.markdown("""
+<div class="info-box">
+<strong>💡 How it works:</strong><br>
+• Pick stocks you want to watch<br>
+• See if people are talking positively or negatively about them<br>
+• Watch price changes in Indian Rupees
+</div>
+""", unsafe_allow_html=True)
+
+# Stock selection with Indian companies included
+st.sidebar.subheader("📊 Pick Stocks to Watch")
+indian_stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFC.NS", "WIPRO.NS", "LT.NS", "BHARTIARTL.NS", "MARUTI.NS"]
+us_stocks = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA"]
+default_symbols = indian_stocks[:4] + us_stocks[:4]
+
+all_stocks = indian_stocks + us_stocks
 selected_stocks = st.sidebar.multiselect(
-    "Select stocks to track:",
-    options=get_stock_symbols(),
+    "Choose stocks:",
+    options=all_stocks,
     default=default_symbols,
-    help="Choose stocks to monitor for sentiment and price analysis"
+    help="Pick stocks you want to track. Indian stocks end with .NS"
 )
 
-# Refresh interval
+# Simplified settings
+st.sidebar.subheader("⚙️ Simple Settings")
+
+# Refresh interval with simple options
 refresh_interval = st.sidebar.selectbox(
-    "Data refresh interval:",
-    options=[5, 10, 15, 30],
+    "How often to update data:",
+    options=[5, 15, 30],
     index=1,
-    help="Minutes between automatic data updates"
+    format_func=lambda x: f"Every {x} minutes",
+    help="How often to get fresh data"
 )
 
-# Analysis parameters
-st.sidebar.subheader("Analysis Settings")
-sentiment_threshold = st.sidebar.slider(
-    "Sentiment Alert Threshold:",
-    min_value=0.1,
-    max_value=1.0,
-    value=0.7,
-    step=0.1,
-    help="Trigger alerts when sentiment scores exceed this threshold"
-)
-
-lookback_days = st.sidebar.slider(
-    "Historical Analysis Period (days):",
-    min_value=1,
-    max_value=30,
-    value=7,
-    help="Number of days to analyze for trends"
+# Simplified analysis period
+lookback_days = st.sidebar.selectbox(
+    "How many days to look back:",
+    options=[3, 7, 14],
+    index=1,
+    format_func=lambda x: f"{x} days",
+    help="How far back to check news and trends"
 )
 
 # Auto-refresh toggle
-auto_refresh = st.sidebar.checkbox("Auto-refresh data", value=True)
+auto_refresh = st.sidebar.checkbox("📱 Auto-update data", value=True, help="Automatically refresh data")
 
-# Main dashboard
-st.title("📈 Stock Market Sentiment & Impact Tracker")
-st.markdown("Real-time stock analysis with news sentiment correlation and predictive insights")
+# Set a default sentiment threshold for beginners
+sentiment_threshold = 0.7
 
-# Create tabs for different views
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📰 Sentiment Analysis", "🗺️ Sector Heatmap", "⚠️ Alerts"])
+# Main dashboard with simplified header
+st.markdown("""
+<div class="main-header">
+    <h1>📈 Stock Market Sentiment Tracker</h1>
+    <p>See what people think about stocks and how prices are moving (in Indian Rupees ₹)</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Create simplified tabs
+tab1, tab2, tab3 = st.tabs(["📊 Main Dashboard", "📰 News Feelings", "⚠️ Alerts"])
 
 with tab1:
-    st.header("Real-Time Market Dashboard")
+    st.header("📊 Your Stock Dashboard")
     
     if not selected_stocks:
-        st.warning("Please select at least one stock from the sidebar to begin analysis.")
+        st.markdown("""
+        <div class="info-box">
+        <strong>👋 Welcome!</strong><br>
+        Please pick some stocks from the sidebar to start tracking them.
+        </div>
+        """, unsafe_allow_html=True)
         st.stop()
     
-    # Create columns for metrics
-    col1, col2, col3, col4 = st.columns(4)
+    # Create columns for simple metrics
+    col1, col2, col3 = st.columns(3)
     
     # Data containers
     stock_data_container = st.container()
@@ -160,26 +210,22 @@ with tab1:
 
     # Display stock data and charts
     if st.session_state.stock_data:
-        # Market summary metrics
+        # Simple metrics for beginners
         with col1:
             total_stocks = len(st.session_state.stock_data)
-            st.metric("Tracked Stocks", total_stocks)
+            st.metric("📊 Stocks Watching", total_stocks)
         
         with col2:
             if st.session_state.sentiment_data:
                 avg_sentiment = np.mean([data.get('overall_sentiment', 0) 
                                        for data in st.session_state.sentiment_data.values()])
-                st.metric("Avg Sentiment", f"{avg_sentiment:.2f}", 
-                         delta=f"{'Positive' if avg_sentiment > 0.5 else 'Negative'}")
+                sentiment_emoji = "😊" if avg_sentiment > 0.6 else "😐" if avg_sentiment > 0.4 else "😟"
+                st.metric("Overall Mood", f"{sentiment_emoji} {avg_sentiment:.1f}/1.0")
         
         with col3:
-            positive_stocks = sum(1 for data in st.session_state.sentiment_data.values() 
-                                if data.get('overall_sentiment', 0) > 0.6)
-            st.metric("Positive Sentiment", f"{positive_stocks}/{total_stocks}")
-        
-        with col4:
             market_alerts = calculate_alerts(st.session_state.sentiment_data, sentiment_threshold)
-            st.metric("Active Alerts", len(market_alerts))
+            alert_emoji = "🚨" if len(market_alerts) > 0 else "✅"
+            st.metric("Alerts", f"{alert_emoji} {len(market_alerts)}")
 
         # Stock price charts
         with chart_container:
@@ -203,25 +249,30 @@ with tab1:
                             st.plotly_chart(fig, use_container_width=True)
                         
                         with col_chart2:
-                            # Stock metrics
+                            # Simple stock metrics in Indian Rupees
                             current_price = stock_info['data']['Close'].iloc[-1]
                             prev_price = stock_info['data']['Close'].iloc[-2] if len(stock_info['data']) > 1 else current_price
                             price_change = current_price - prev_price
                             price_change_pct = (price_change / prev_price) * 100 if prev_price != 0 else 0
                             
+                            # Clean symbol name for display
+                            display_symbol = symbol.replace('.NS', ' (India)')
+                            
                             st.metric(
-                                f"{symbol} Price",
+                                f"💰 {display_symbol}",
                                 format_currency(current_price),
-                                delta=f"{price_change_pct:.2f}%"
+                                delta=f"{price_change_pct:.1f}%"
                             )
                             
                             if sentiment_info:
                                 sentiment_score = sentiment_info.get('overall_sentiment', 0)
-                                sentiment_label = "Positive" if sentiment_score > 0.6 else "Negative" if sentiment_score < 0.4 else "Neutral"
-                                st.metric("Sentiment", f"{sentiment_score:.2f}", delta=sentiment_label)
-                                
-                                correlation = sentiment_info.get('price_correlation', 0)
-                                st.metric("Price-Sentiment Correlation", f"{correlation:.2f}")
+                                if sentiment_score > 0.6:
+                                    sentiment_display = "😊 Good"
+                                elif sentiment_score > 0.4:
+                                    sentiment_display = "😐 Okay"
+                                else:
+                                    sentiment_display = "😟 Poor"
+                                st.metric("🗞️ News Mood", sentiment_display)
             
             with chart_tab2:
                 # Comparison view
@@ -232,175 +283,178 @@ with tab1:
                     st.info("Select multiple stocks to view comparison charts.")
 
 with tab2:
-    st.header("📰 News Sentiment Analysis")
+    st.header("📰 What People Are Saying")
+    
+    st.markdown("""
+    <div class="info-box">
+    <strong>💡 What this shows:</strong><br>
+    • We read news articles about your stocks<br>
+    • We check if the news sounds positive or negative<br>
+    • This helps predict if stock prices might go up or down
+    </div>
+    """, unsafe_allow_html=True)
     
     if st.session_state.sentiment_data:
-        # Overall sentiment distribution
-        sentiment_scores = [data.get('overall_sentiment', 0) for data in st.session_state.sentiment_data.values()]
-        labels = list(st.session_state.sentiment_data.keys())
+        # Simple sentiment display
+        st.subheader("📊 Overall News Mood")
         
+        sentiment_scores = [data.get('overall_sentiment', 0) for data in st.session_state.sentiment_data.values()]
+        labels = [symbol.replace('.NS', ' (India)') for symbol in st.session_state.sentiment_data.keys()]
+        
+        # Create simple chart
         fig_sentiment = px.bar(
             x=labels,
             y=sentiment_scores,
-            title="Stock Sentiment Scores",
-            labels={'x': 'Stock Symbol', 'y': 'Sentiment Score'},
+            title="How People Feel About Each Stock",
+            labels={'x': 'Stock', 'y': 'Positive Feeling (0 = Bad, 1 = Good)'},
             color=sentiment_scores,
             color_continuous_scale='RdYlGn'
         )
         fig_sentiment.add_hline(y=0.5, line_dash="dash", line_color="gray", 
-                               annotation_text="Neutral Threshold")
+                               annotation_text="Neutral (Neither Good nor Bad)")
         st.plotly_chart(fig_sentiment, use_container_width=True)
         
-        # Detailed sentiment breakdown
-        st.subheader("Detailed Sentiment Analysis")
+        # Simple stock details
+        st.subheader("📈 Individual Stock Details")
         
         for symbol in selected_stocks:
             if symbol in st.session_state.sentiment_data:
                 sentiment_info = st.session_state.sentiment_data[symbol]
+                display_name = symbol.replace('.NS', ' (India)')
                 
-                with st.expander(f"{symbol} - Sentiment Details"):
+                with st.expander(f"📊 {display_name} Details"):
                     col_sent1, col_sent2 = st.columns(2)
                     
                     with col_sent1:
-                        st.metric("Overall Sentiment", f"{sentiment_info.get('overall_sentiment', 0):.2f}")
-                        st.metric("Positive Articles", sentiment_info.get('positive_count', 0))
-                        st.metric("Negative Articles", sentiment_info.get('negative_count', 0))
+                        mood = sentiment_info.get('overall_sentiment', 0)
+                        if mood > 0.6:
+                            mood_text = "😊 People are happy about this stock"
+                        elif mood > 0.4:
+                            mood_text = "😐 People feel okay about this stock"
+                        else:
+                            mood_text = "😟 People are worried about this stock"
+                        st.write(f"**Overall Mood:** {mood_text}")
+                        st.write(f"**Good News:** {sentiment_info.get('positive_count', 0)} articles")
+                        st.write(f"**Bad News:** {sentiment_info.get('negative_count', 0)} articles")
                     
                     with col_sent2:
-                        st.metric("Neutral Articles", sentiment_info.get('neutral_count', 0))
-                        st.metric("Total Articles Analyzed", sentiment_info.get('total_articles', 0))
+                        st.write(f"**Neutral News:** {sentiment_info.get('neutral_count', 0)} articles")
+                        total_articles = sentiment_info.get('total_articles', 0)
+                        st.write(f"**Total Articles:** {total_articles}")
                         
-                        # Sentiment trend indicator
+                        # Simple trend
                         trend = sentiment_info.get('sentiment_trend', 'stable')
-                        trend_emoji = "📈" if trend == "improving" else "📉" if trend == "declining" else "➡️"
-                        st.metric("Sentiment Trend", f"{trend_emoji} {trend.title()}")
+                        if trend == "improving":
+                            trend_text = "📈 Getting better!"
+                        elif trend == "declining":
+                            trend_text = "📉 Getting worse"
+                        else:
+                            trend_text = "➡️ Staying same"
+                        st.write(f"**Trend:** {trend_text}")
                     
-                    # Recent headlines
-                    if 'recent_headlines' in sentiment_info:
-                        st.subheader("Recent Headlines")
-                        for headline in sentiment_info['recent_headlines'][:5]:
-                            sentiment_color = "green" if headline['sentiment'] > 0.6 else "red" if headline['sentiment'] < 0.4 else "orange"
-                            st.markdown(f"**{headline['title']}**")
-                            st.markdown(f"<span style='color: {sentiment_color}'>Sentiment: {headline['sentiment']:.2f}</span>", 
-                                      unsafe_allow_html=True)
-                            st.caption(f"Source: {headline.get('source', 'Unknown')} | {headline.get('date', 'Unknown date')}")
-                            st.markdown("---")
+                    # Recent headlines (simplified)
+                    if 'recent_headlines' in sentiment_info and sentiment_info['recent_headlines']:
+                        st.write("**📰 Recent News:**")
+                        for i, headline in enumerate(sentiment_info['recent_headlines'][:3], 1):
+                            sentiment_value = headline['sentiment']
+                            if sentiment_value > 0.6:
+                                sentiment_icon = "😊"
+                            elif sentiment_value > 0.4:
+                                sentiment_icon = "😐"
+                            else:
+                                sentiment_icon = "😟"
+                            st.write(f"{i}. {sentiment_icon} {headline['title'][:80]}...")
     else:
-        st.info("No sentiment data available. Please refresh the data from the main dashboard.")
+        st.markdown("""
+        <div class="info-box">
+        <strong>📰 No news data yet</strong><br>
+        Please click "🔄 Refresh Data" in the main dashboard to get news information.
+        </div>
+        """, unsafe_allow_html=True)
 
 with tab3:
-    st.header("🗺️ Sector Sentiment Heatmap")
+    st.header("⚠️ Important Alerts")
     
-    if st.session_state.sentiment_data and st.session_state.stock_data:
-        # Create sector heatmap
-        heatmap_fig = create_sentiment_heatmap(st.session_state.stock_data, st.session_state.sentiment_data)
-        st.plotly_chart(heatmap_fig, use_container_width=True)
-        
-        # Sector performance summary
-        st.subheader("Sector Performance Summary")
-        
-        # Group stocks by sector (simplified mapping)
-        sector_mapping = {
-            'AAPL': 'Technology', 'GOOGL': 'Technology', 'MSFT': 'Technology', 'META': 'Technology', 'NVDA': 'Technology',
-            'AMZN': 'Consumer Discretionary', 'TSLA': 'Consumer Discretionary',
-            'JPM': 'Financial Services'
-        }
-        
-        sector_data = {}
-        for symbol in selected_stocks:
-            if symbol in st.session_state.sentiment_data:
-                sector = sector_mapping.get(symbol, 'Other')
-                if sector not in sector_data:
-                    sector_data[sector] = {'sentiment_scores': [], 'stocks': []}
-                
-                sentiment_score = st.session_state.sentiment_data[symbol].get('overall_sentiment', 0)
-                sector_data[sector]['sentiment_scores'].append(sentiment_score)
-                sector_data[sector]['stocks'].append(symbol)
-        
-        # Display sector summary
-        for sector, data in sector_data.items():
-            avg_sentiment = np.mean(data['sentiment_scores'])
-            sentiment_status = "Positive" if avg_sentiment > 0.6 else "Negative" if avg_sentiment < 0.4 else "Neutral"
-            
-            with st.expander(f"{sector} Sector - {sentiment_status} ({avg_sentiment:.2f})"):
-                col_sector1, col_sector2 = st.columns(2)
-                
-                with col_sector1:
-                    st.metric("Average Sentiment", f"{avg_sentiment:.2f}")
-                    st.metric("Stocks Tracked", len(data['stocks']))
-                
-                with col_sector2:
-                    st.write("**Stocks in this sector:**")
-                    for stock in data['stocks']:
-                        stock_sentiment = st.session_state.sentiment_data[stock].get('overall_sentiment', 0)
-                        st.write(f"• {stock}: {stock_sentiment:.2f}")
-    else:
-        st.info("No data available for sector analysis. Please refresh the data from the main dashboard.")
-
-with tab4:
-    st.header("⚠️ Predictive Alerts")
+    st.markdown("""
+    <div class="info-box">
+    <strong>💡 What alerts mean:</strong><br>
+    • 🚨 Red = Very important, pay attention!<br>
+    • 🟡 Yellow = Worth noting, but not urgent<br>
+    • ✅ Green = All good, nothing to worry about
+    </div>
+    """, unsafe_allow_html=True)
     
     if st.session_state.sentiment_data:
         # Calculate and display alerts
         alerts = calculate_alerts(st.session_state.sentiment_data, sentiment_threshold)
         
         if alerts:
-            st.warning(f"🚨 {len(alerts)} Active Alert(s)")
+            st.markdown(f"### 🚨 {len(alerts)} Things Need Your Attention")
             
             for alert in alerts:
                 alert_type = alert['type']
-                symbol = alert['symbol']
+                symbol = alert['symbol'].replace('.NS', ' (India)')
                 message = alert['message']
                 severity = alert['severity']
                 
-                # Choose alert color based on severity
-                if severity == 'high':
-                    st.error(f"🔴 **{alert_type.upper()}** - {symbol}: {message}")
-                elif severity == 'medium':
-                    st.warning(f"🟡 **{alert_type.upper()}** - {symbol}: {message}")
+                # Simplify alert messages for beginners
+                if "extremely positive sentiment" in message.lower():
+                    simple_message = "People are VERY excited about this stock!"
+                elif "extremely negative sentiment" in message.lower():
+                    simple_message = "People are VERY worried about this stock!"
+                elif "high positive sentiment" in message.lower():
+                    simple_message = "People are quite happy with this stock"
+                elif "high negative sentiment" in message.lower():
+                    simple_message = "People are quite worried about this stock"
                 else:
-                    st.info(f"🔵 **{alert_type.upper()}** - {symbol}: {message}")
+                    simple_message = message
+                
+                # Choose alert display based on severity
+                if severity == 'high':
+                    st.error(f"🚨 **{symbol}**: {simple_message}")
+                elif severity == 'medium':
+                    st.warning(f"🟡 **{symbol}**: {simple_message}")
+                else:
+                    st.info(f"💡 **{symbol}**: {simple_message}")
         else:
-            st.success("✅ No active alerts. Market sentiment is within normal ranges.")
+            st.success("✅ Everything looks normal! No alerts right now.")
+            st.balloons()
         
-        # Alert configuration
-        st.subheader("Alert Settings")
+        # Simple explanation
+        st.subheader("📚 What Do These Alerts Mean?")
         
-        col_alert1, col_alert2 = st.columns(2)
+        col_help1, col_help2 = st.columns(2)
         
-        with col_alert1:
-            st.write("**Current Alert Criteria:**")
-            st.write(f"• Sentiment threshold: {sentiment_threshold}")
-            st.write(f"• Analysis period: {lookback_days} days")
-            st.write(f"• Auto-refresh: {'Enabled' if auto_refresh else 'Disabled'}")
+        with col_help1:
+            st.markdown("""
+            **🚨 Red Alerts:**
+            - Very strong feelings (good or bad)
+            - Price might change a lot soon
+            - Consider buying or selling
+            """)
         
-        with col_alert2:
-            st.write("**Alert Types:**")
-            st.write("• Extreme positive sentiment (>0.8)")
-            st.write("• Extreme negative sentiment (<0.2)")
-            st.write("• Rapid sentiment changes")
-            st.write("• High price-sentiment correlation")
-        
-        # Historical alerts (placeholder for future implementation)
-        st.subheader("Recent Alert History")
-        st.info("Alert history feature will be available in future updates.")
-        
+        with col_help2:
+            st.markdown("""
+            **🟡 Yellow Alerts:**
+            - Moderate feelings about the stock
+            - Keep watching this stock
+            - No immediate action needed
+            """)
     else:
-        st.info("No sentiment data available for alert analysis. Please refresh the data from the main dashboard.")
+        st.markdown("""
+        <div class="info-box">
+        <strong>📊 No alert data yet</strong><br>
+        Please click "🔄 Refresh Data" in the main dashboard to check for any important updates.
+        </div>
+        """, unsafe_allow_html=True)
 
-# Footer
+
+
+# Simple footer
 st.markdown("---")
-st.markdown(
-    """
-    <div style='text-align: center; color: gray;'>
-        <p>📈 Stock Market Sentiment & Impact Tracker | Real-time analysis with predictive insights</p>
-        <p>Data sources: Yahoo Finance, News APIs | Analysis powered by NLP sentiment processing</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# Auto-refresh mechanism (runs every refresh_interval minutes)
-if auto_refresh:
-    time.sleep(refresh_interval * 60)
-    st.rerun()
+st.markdown("""
+<div style='text-align: center; color: gray; font-size: 14px;'>
+    <p>📈 Easy Stock Market Tracker | Shows prices in Indian Rupees (₹)</p>
+    <p>Gets data from Yahoo Finance and analyzes news to help you understand market feelings</p>
+</div>
+""", unsafe_allow_html=True)
