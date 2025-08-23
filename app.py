@@ -302,7 +302,7 @@ with tab1:
                             
                             st.metric(
                                 f"💰 {display_symbol}",
-                                format_currency(current_price),
+                                format_currency(current_price, symbol=symbol),
                                 delta=f"{price_change_pct:.1f}%"
                             )
                             

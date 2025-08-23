@@ -32,26 +32,30 @@ def get_stock_symbols() -> List[str]:
         'BA', 'CAT', 'GE', 'MMM', 'HON', 'UPS', 'FDX', 'RTX', 'LMT', 'NOC'
     ]
 
-def format_currency(amount: float, currency: str = 'INR') -> str:
+def format_currency(amount: float, currency: str = 'INR', symbol: str = '') -> str:
     """
-    Format a number as currency.
+    Format a number as currency, handling Indian vs US stocks appropriately.
     
     Args:
         amount: The amount to format
         currency: Currency code (default: INR)
+        symbol: Stock symbol to determine if conversion needed
         
     Returns:
         Formatted currency string
     """
     try:
-        if currency == 'INR':
-            # Convert USD to INR (approximate rate: 1 USD = 83 INR)
-            inr_amount = amount * 83
-            return f"₹{inr_amount:,.2f}"
-        elif currency == 'USD':
-            return f"${amount:,.2f}"
+        # Indian stocks (.NS) are already in INR, US stocks need conversion
+        if symbol.endswith('.NS'):
+            # Indian stock - amount is already in INR
+            return f"₹{amount:,.2f}"
         else:
-            return f"{amount:,.2f} {currency}"
+            # US stock - convert USD to INR (approximate rate: 1 USD = 83 INR)
+            if currency == 'INR':
+                inr_amount = amount * 83
+                return f"₹{inr_amount:,.2f}"
+            else:
+                return f"${amount:,.2f}"
     except:
         return str(amount)
 
@@ -97,11 +101,11 @@ def format_large_number(number: float) -> str:
 
 def calculate_alerts(sentiment_data: Dict[str, Any], threshold: float = 0.7) -> List[Dict[str, Any]]:
     """
-    Calculate alerts based on sentiment analysis results.
+    Calculate alerts based on sentiment analysis results and generate more realistic alerts.
     
     Args:
         sentiment_data: Dictionary of sentiment data for multiple stocks
-        threshold: Sentiment threshold for alerts
+        threshold: Sentiment threshold for alerts (lowered for more alerts)
         
     Returns:
         List of alert dictionaries
@@ -114,16 +118,18 @@ def calculate_alerts(sentiment_data: Dict[str, Any], threshold: float = 0.7) -> 
             confidence = data.get('confidence', 0.0)
             sentiment_trend = data.get('sentiment_trend', 'stable')
             price_correlation = data.get('price_correlation', 0.0)
+            total_articles = data.get('total_articles', 0)
             
-            # Extreme sentiment alerts
-            if overall_sentiment > 0.8:
+            # Use lower thresholds to generate more realistic alerts
+            # Extreme sentiment alerts (very rare, high threshold)
+            if overall_sentiment > 0.85:
                 alerts.append({
                     'symbol': symbol,
                     'type': 'sentiment',
                     'severity': 'high',
                     'message': f'Extremely positive sentiment detected ({overall_sentiment:.2f})'
                 })
-            elif overall_sentiment < 0.2:
+            elif overall_sentiment < 0.15:
                 alerts.append({
                     'symbol': symbol,
                     'type': 'sentiment',
@@ -131,15 +137,15 @@ def calculate_alerts(sentiment_data: Dict[str, Any], threshold: float = 0.7) -> 
                     'message': f'Extremely negative sentiment detected ({overall_sentiment:.2f})'
                 })
             
-            # Moderate sentiment alerts
-            elif overall_sentiment > threshold:
+            # Moderate sentiment alerts (more common, lower threshold)
+            elif overall_sentiment > 0.65:
                 alerts.append({
                     'symbol': symbol,
                     'type': 'sentiment',
                     'severity': 'medium',
                     'message': f'High positive sentiment ({overall_sentiment:.2f})'
                 })
-            elif overall_sentiment < (1 - threshold):
+            elif overall_sentiment < 0.35:
                 alerts.append({
                     'symbol': symbol,
                     'type': 'sentiment',
@@ -147,15 +153,15 @@ def calculate_alerts(sentiment_data: Dict[str, Any], threshold: float = 0.7) -> 
                     'message': f'High negative sentiment ({overall_sentiment:.2f})'
                 })
             
-            # Trend alerts
-            if sentiment_trend == 'improving' and overall_sentiment > 0.6:
+            # Trend alerts (based on actual trends)
+            if sentiment_trend == 'improving':
                 alerts.append({
                     'symbol': symbol,
                     'type': 'trend',
                     'severity': 'medium',
                     'message': 'Improving sentiment trend detected'
                 })
-            elif sentiment_trend == 'declining' and overall_sentiment < 0.4:
+            elif sentiment_trend == 'declining':
                 alerts.append({
                     'symbol': symbol,
                     'type': 'trend',
@@ -163,23 +169,41 @@ def calculate_alerts(sentiment_data: Dict[str, Any], threshold: float = 0.7) -> 
                     'message': 'Declining sentiment trend detected'
                 })
             
-            # Correlation alerts
-            if abs(price_correlation) > 0.7:
+            # Article volume alerts
+            if total_articles > 10:
                 alerts.append({
                     'symbol': symbol,
-                    'type': 'correlation',
+                    'type': 'volume',
                     'severity': 'low',
-                    'message': f'High price-sentiment correlation detected ({price_correlation:.2f})'
+                    'message': f'High news activity detected ({total_articles} articles)'
+                })
+            elif total_articles < 2:
+                alerts.append({
+                    'symbol': symbol,
+                    'type': 'volume',
+                    'severity': 'low',
+                    'message': 'Low news activity - limited data available'
                 })
             
             # Confidence alerts
-            if confidence < 0.3 and data.get('total_articles', 0) > 5:
+            if confidence < 0.4:
                 alerts.append({
                     'symbol': symbol,
                     'type': 'confidence',
                     'severity': 'low',
-                    'message': f'Low sentiment confidence with mixed signals'
+                    'message': 'Mixed sentiment signals - conflicting opinions'
                 })
+        
+        # Ensure we always have some alerts for demonstration
+        if len(alerts) == 0:
+            # Generate at least one demo alert
+            sample_symbol = list(sentiment_data.keys())[0] if sentiment_data else 'SAMPLE'
+            alerts.append({
+                'symbol': sample_symbol,
+                'type': 'info',
+                'severity': 'low',
+                'message': 'Market monitoring active - no significant alerts at this time'
+            })
         
         # Sort alerts by severity
         severity_order = {'high': 0, 'medium': 1, 'low': 2}
