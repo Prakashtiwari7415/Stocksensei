@@ -1,12 +1,15 @@
-# Stock Market Sentiment Tracker
+# Stock Market News & Sentiment Tracker
 
 ## Overview
 
-This is a Streamlit-based web application that combines real-time stock market data with sentiment analysis from news sources. The application provides traders and investors with a comprehensive dashboard to monitor stock prices, technical indicators, and market sentiment trends in real-time. Users can select multiple stocks to track, view interactive charts with price movements and sentiment overlays, and receive alerts based on configurable criteria.
+A full-stack web application that combines real-time stock market data with sentiment analysis from news sources. Built for beginners with a focus on Indian market (NSE/BSE) and US exchanges. The application provides an easy-to-understand dashboard to monitor stock prices in Indian Rupees, analyze news sentiment, and receive alerts about market movements.
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+Preferred communication style: Simple, everyday language for beginners
+Target users: Indian retail investors and beginners
+Currency display: Indian Rupees (INR)
+Timezone: Asia/Kolkata (IST)
 
 ## System Architecture
 
